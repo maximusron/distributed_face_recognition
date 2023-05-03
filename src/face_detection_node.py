@@ -12,17 +12,20 @@ from pymongo import MongoClient
 import pandas as pd
 import csv
 
+
+str_mdb = "mongodb+srv://ZiyaZainab:VGwI4vh6IBLUEetz@imagedetection.kqyfmwi.mongodb.net/?retryWrites=true&w=majority"
+client = MongoClient(str_mdb)
+dbname = client['Face_Recognition']
+col1 = dbname['Bounding_Boxes']
+
 class FaceDetector:
     def __init__(self):
         self.bridge = CvBridge()
         # self.pub = rospy.Publisher('/bounding_boxes', Polygon, queue_size=1)
         self.pub_img = rospy.Publisher('/img_detect', Image, queue_size=1)
         self.sub = rospy.Subscriber('/webcam', Image, self.callback)
-        self.str = "mongodb+srv://Ziya:Dsproj23@sample.dq06bsy.mongodb.net/?retryWrites=true&w=majority"
-        self.client = MongoClient(str)
-        self.dbname = client['Face Recognition']
-        self.col1 = dbname['Bounding Boxes']
-    
+        
+        
     def convertToRGB(self, img):
         return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
@@ -42,37 +45,32 @@ class FaceDetector:
 
 
     def callback(self, msg):
-        try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-        except CvBridgeError as e:
-            print(e)
-            return
-
+        cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
         haar_face_cascade = cv2.CascadeClassifier('/home/ziya/ds_ws/src/distributed_face_recognition/src/data/haarcascade_frontalface_alt.xml')
  
 
         # call our function to detect faces
         haar_detected_img, faces = self.detect_faces(haar_face_cascade, cv_image)
+        # print(hello)
 
-        try:
-            now = rospy.get_rostime()
-            rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
+        now = rospy.get_rostime()
+        # rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
+        face_list = []
+        for (x, y, w, h) in faces:
+            item_1 = {
+                "Timestamp": now.secs,
+                "x": int(x),
+                "y": int(y),
+                "w": int(w),
+                "h": int(h)
+            }
+            face_list.append(item_1)
 
-            for (x, y, w, h) in faces:
-                cv2.rectangle(img_copy, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                item_1 = {
-                    "Timestamp": now.secs,
-                    "x": x,
-                    "y": y,
-                    "w": w,
-                    "h": h,
-                }
-                self.col1.insert_one([item_1])
-
-            self.pub_img.publish(self.bridge.cv2_to_imgmsg(haar_detected_img, "bgr8"))
-        except CvBridgeError as e:
-            print(e)
-
+        print(len(face_list), "Faces detected")
+        print(Uploaded Face coordinated) 
+        col1.insert_many(face_list)
+        self.pub_img.publish(self.bridge.cv2_to_imgmsg(haar_detected_img, "bgr8"))
+    
 if __name__ == '__main__':
     rospy.init_node('facenet_object_detector', anonymous=True)
     facenet_object_detector = FaceDetector()
