@@ -8,6 +8,9 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from std_msgs.msg import Header
 from geometry_msgs.msg import Polygon, Point32
+from pymongo import MongoClient
+import pandas as pd
+import csv
 
 class FaceDetector:
     def __init__(self):
@@ -15,6 +18,10 @@ class FaceDetector:
         # self.pub = rospy.Publisher('/bounding_boxes', Polygon, queue_size=1)
         self.pub_img = rospy.Publisher('/img_detect', Image, queue_size=1)
         self.sub = rospy.Subscriber('/webcam', Image, self.callback)
+        self.str = "mongodb+srv://Ziya:Dsproj23@sample.dq06bsy.mongodb.net/?retryWrites=true&w=majority"
+        self.client = MongoClient(str)
+        self.dbname = client['Face Recognition']
+        self.col1 = dbname['Bounding Boxes']
     
     def convertToRGB(self, img):
         return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -31,7 +38,7 @@ class FaceDetector:
         for (x, y, w, h) in faces:
             cv2.rectangle(img_copy, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        return img_copy
+        return img_copy, faces
 
 
     def callback(self, msg):
@@ -45,11 +52,23 @@ class FaceDetector:
  
 
         # call our function to detect faces
-        haar_detected_img = self.detect_faces(haar_face_cascade, cv_image)
+        haar_detected_img, faces = self.detect_faces(haar_face_cascade, cv_image)
 
         try:
             now = rospy.get_rostime()
             rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
+
+            for (x, y, w, h) in faces:
+                cv2.rectangle(img_copy, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                item_1 = {
+                    "Timestamp": now.secs,
+                    "x": x,
+                    "y": y,
+                    "w": w,
+                    "h": h,
+                }
+                self.col1.insert_one([item_1])
+
             self.pub_img.publish(self.bridge.cv2_to_imgmsg(haar_detected_img, "bgr8"))
         except CvBridgeError as e:
             print(e)
@@ -63,22 +82,9 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Shutting down")
 
-from pymongo import MongoClient
-import pandas as pd
-import csv
-str = "mongodb+srv://Ziya:Dsproj23@sample.dq06bsy.mongodb.net/?retryWrites=true&w=majority"
-client = MongoClient(str)
-dbname = client['db']
-col1 = dbname['items']
-item_1 = {
-	"name":"xyz",
-	"price":20
-}
-item_2 = {
-	"name":"abc", 
-	"price":23
-}
-col1.insert_many([item_1, item_2])
+
+
+
 
 
 
