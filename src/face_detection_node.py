@@ -37,12 +37,12 @@ class FaceDetector:
 
     def callback(self, msg):
         try:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
         except CvBridgeError as e:
             print(e)
             return
 
-        haar_face_cascade = cv2.CascadeClassifier('/home/maximus/ds_mini_proj_ws/src/lane_keg/controller_driver/src/data/haarcascade_frontalface_alt.xml')
+        haar_face_cascade = cv2.CascadeClassifier('/home/ziya/ds_ws/src/distributed_face_recognition/src/data/haarcascade_frontalface_alt.xml')
  
 
         # call our function to detect faces
