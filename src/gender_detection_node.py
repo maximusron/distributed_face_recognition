@@ -1,7 +1,3 @@
-# Import Libraries
-import cv2
-import numpy as np
-
 #!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
@@ -11,15 +7,22 @@ import numpy as np
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from pymongo import MongoClient
+# Import Libraries
+import cv2
+import numpy as np
 
+passwd = "VGwI4vh6IBLUEetz" 
+str_mdb = "mongodb+srv://ZiyaZainab:" + passwd + "@imagedetection.kqyfmwi.mongodb.net/?retryWrites=true&w=majority"
+client = MongoClient(str_mdb)
+dbname = client['Gender_Detection']
+col1 = dbname['Gender']
 
-
-GENDER_MODEL = 'weights/deploy_gender.prototxt'
-GENDER_PROTO = 'weights/gender_net.caffemodel'
+GENDER_MODEL = '/home/ziya/ds_ws/src/distributed_face_recognition/src/weights/deploy_gender.prototxt'
+GENDER_PROTO = '/home/ziya/ds_ws/src/distributed_face_recognition/src/weights/gender_net.caffemodel'
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 GENDER_LIST = ['Male', 'Female']
-FACE_PROTO = "weights/deploy.prototxt.txt"
-FACE_MODEL = "weights/res10_300x300_ssd_iter_140000_fp16.caffemodel"
+FACE_PROTO = "/home/ziya/ds_ws/src/distributed_face_recognition/src/weights/deploy.prototxt.txt"
+FACE_MODEL = "/home/ziya/ds_ws/src/distributed_face_recognition/src/weights/res10_300x300_ssd_iter_140000_fp16.caffemodel"
 
 
 face_net = cv2.dnn.readNetFromCaffe(FACE_PROTO, FACE_MODEL)
@@ -93,12 +96,8 @@ class FaceDetector:
     def __init__(self):
         self.bridge = CvBridge()
         # self.pub = rospy.Publisher('/bounding_boxes', Polygon, queue_size=1)
-        self.pub_img = rospy.Publisher('/img_detect', Image, queue_size=1)
+        self.pub_img = rospy.Publisher('/gender_detect', Image, queue_size=1)
         self.sub = rospy.Subscriber('/webcam', Image, self.callback)
-        self.str = "mongodb+srv://Ziya:Dsproj23@sample.dq06bsy.mongodb.net/?retryWrites=true&w=majority"
-        self.client = MongoClient(str)
-        self.dbname = client['Gender Estimation']
-        self.col1 = dbname['Boxes + Gender']
 
 
 
@@ -119,13 +118,9 @@ class FaceDetector:
         faces = get_faces(frame)
         # Loop over the faces detected
         # for idx, face in enumerate(faces):
+        gender_list = []
         for i, (start_x, start_y, end_x, end_y) in enumerate(faces):
             face_img = frame[start_y: end_y, start_x: end_x]
-            # image --> Input image to preprocess before passing it through our dnn for classification.
-            # scale factor = After performing mean substraction we can optionally scale the image by some factor. (if 1 -> no scaling)
-            # size = The spatial size that the CNN expects. Options are = (224*224, 227*227 or 299*299)
-            # mean = mean substraction values to be substracted from every channel of the image.
-            # swapRB=OpenCV assumes images in BGR whereas the mean is supplied in RGB. To resolve this we set swapRB to True.
             blob = cv2.dnn.blobFromImage(image=face_img, scalefactor=1.0, size=(
                 227, 227), mean=MODEL_MEAN_VALUES, swapRB=False, crop=False)
             # Predict Gender
@@ -136,6 +131,7 @@ class FaceDetector:
             gender_confidence_score = gender_preds[0][i]
             # Draw the box
             label = "{}-{:.2f}%".format(gender, gender_confidence_score*100)
+            gender_list.append((start_x, start_y, gender, gender_confidence_score*100))
             print(label)
             yPos = start_y - 15
             while yPos < 15:
@@ -148,33 +144,28 @@ class FaceDetector:
             cv2.putText(frame, label, (start_x, yPos),
                         cv2.FONT_HERSHEY_SIMPLEX, optimal_font_scale, box_color, 2)
 
-            # Display processed image
-        # display_img("Gender Estimator", frame)
-        # # uncomment if you want to save the image
-        # cv2.imwrite("output.jpg", frame)
-        # # Cleanup
-        # cv2.destroyAllWindows()
-
         try:
             now = rospy.get_rostime()
             rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
-
-            # for (x, y, w, h) in faces:
-            #     item_1 = {
-            #         "Timestamp": now.secs,
-            #         "x": x,
-            #         "y": y,
-            #         "w": w,
-            #         "h": h,
-            #     }
-            #     self.col1.insert_one([item_1])
-
+            db_gender_list = [] 
+            for (x, y, gender, prob) in gender_list:
+                item_1 = {
+                    "Timestamp": now.secs,
+                    "x": int(x),
+                    "y": int(y),
+                    "Gender": gender,
+                    "Probability": prob
+                }
+                db_gender_list.append(item_1)
+            print(len(db_gender_list), "Faces detected")
+            print("Uploading Face coordinates to Cloud...") 
+            col1.insert_many(db_gender_list)
             self.pub_img.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
         except CvBridgeError as e:
             print(e)
 
 if __name__ == '__main__':
-    rospy.init_node('facenet_object_detector', anonymous=True)
+    rospy.init_node('gender_detect_node', anonymous=True)
     facenet_object_detector = FaceDetector()
 
     try:
