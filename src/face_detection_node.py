@@ -67,7 +67,7 @@ class FaceDetector:
             face_list.append(item_1)
 
         print(len(face_list), "Faces detected")
-        print(Uploaded Face coordinated) 
+        print("Uploading Face coordinates to Cloud...") 
         col1.insert_many(face_list)
         self.pub_img.publish(self.bridge.cv2_to_imgmsg(haar_detected_img, "bgr8"))
     
