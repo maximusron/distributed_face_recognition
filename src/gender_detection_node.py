@@ -149,27 +149,27 @@ class FaceDetector:
                         cv2.FONT_HERSHEY_SIMPLEX, optimal_font_scale, box_color, 2)
 
             # Display processed image
-        display_img("Gender Estimator", frame)
-        # uncomment if you want to save the image
-        cv2.imwrite("output.jpg", frame)
-        # Cleanup
-        cv2.destroyAllWindows()
+        # display_img("Gender Estimator", frame)
+        # # uncomment if you want to save the image
+        # cv2.imwrite("output.jpg", frame)
+        # # Cleanup
+        # cv2.destroyAllWindows()
 
         try:
             now = rospy.get_rostime()
             rospy.loginfo("Current time %i %i", now.secs, now.nsecs)
 
-            for (x, y, w, h) in faces:
-                item_1 = {
-                    "Timestamp": now.secs,
-                    "x": x,
-                    "y": y,
-                    "w": w,
-                    "h": h,
-                }
-                self.col1.insert_one([item_1])
+            # for (x, y, w, h) in faces:
+            #     item_1 = {
+            #         "Timestamp": now.secs,
+            #         "x": x,
+            #         "y": y,
+            #         "w": w,
+            #         "h": h,
+            #     }
+            #     self.col1.insert_one([item_1])
 
-            self.pub_img.publish(self.bridge.cv2_to_imgmsg(haar_detected_img, "bgr8"))
+            self.pub_img.publish(self.bridge.cv2_to_imgmsg(frame, "bgr8"))
         except CvBridgeError as e:
             print(e)
 
