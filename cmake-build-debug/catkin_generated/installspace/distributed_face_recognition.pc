@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: distributed_face_recognition
+Description: Description of distributed_face_recognition
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib -lcontroller_driver
+Requires: cv_bridge roscpp rospy std_msgs
