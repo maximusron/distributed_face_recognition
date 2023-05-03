@@ -15,7 +15,7 @@ pub = rospy.Publisher('/webcam', Image,queue_size=10)
 def main():
     cap = cv2.VideoCapture(0)
     k = 0
-    while(1):
+    while not rospy.is_shutdown():
         _, frame = cap.read()
         rospy.loginfo("Publishing") 
         print("Publishing{}".format(k))
@@ -27,6 +27,6 @@ def main():
 
 if __name__ == '__main__':  
     rospy.init_node("webcam_node", anonymous=True)
-    rate = rospy.Rate(30)
+    rate = rospy.Rate(5)
     main()
     rospy.spin()

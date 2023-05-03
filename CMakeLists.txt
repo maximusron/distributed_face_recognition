@@ -159,7 +159,7 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS
-   src/webcam_publisher.py src/obj_detect.py src/face_detection_node.py
+   src/webcam_publisher.py src/obj_detect.py src/face_detection_node.py src/gender_detection_node.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 
