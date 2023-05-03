@@ -63,6 +63,24 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print("Shutting down")
 
+from pymongo import MongoClient
+import pandas as pd
+import csv
+str = "mongodb+srv://Ziya:Dsproj23@sample.dq06bsy.mongodb.net/?retryWrites=true&w=majority"
+client = MongoClient(str)
+dbname = client['db']
+col1 = dbname['items']
+item_1 = {
+	"name":"xyz",
+	"price":20
+}
+item_2 = {
+	"name":"abc", 
+	"price":23
+}
+col1.insert_many([item_1, item_2])
+
+
 
 
 	
